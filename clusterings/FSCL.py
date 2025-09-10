@@ -3,6 +3,12 @@ from sklearn.base import ClusterMixin
 from tqdm import tqdm
 
 class FSCL(ClusterMixin):
+    """
+    Frequency Sensitive Competitive Learning
+    Move prototypes towards data they are closest to.
+    Penalize (increase) distance measure based on how often a prototype has "won".
+    Prevents dead neurons that occur when not uniquely closest to any cluster.
+    """
 
     def __init__(self, 
                  num_prototypes: int, 
