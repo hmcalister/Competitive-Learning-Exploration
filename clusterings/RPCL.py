@@ -21,7 +21,8 @@ class RPCL(ClusterMixin):
     def fit(self, 
             X: np.ndarray, 
             num_epochs: int = 512,
-            learning_rate: float = 1e-3, 
+            best_matching_unit_learning_rate: float = 1e-3, 
+            rival_matching_unit_learning_rate: float = 1e-5, 
             batch_size = 64,
             disable_progress_bar: bool = False,
         ) -> None:
@@ -51,12 +52,17 @@ class RPCL(ClusterMixin):
 
                 # Index of the best matching unit for each datum
                 # Shape (batch_size,)
-                best_matching_unit_index: np.ndarray = weighted_squared_distance.argmin(axis=0)
+                argpart = np.argpartition(weighted_squared_distance, kth=[0,1], axis=0)
+                best_matching_unit_index: np.ndarray = argpart[0, :]
+                rival_matching_unit_index: np.ndarray = argpart[1, :]
+                del argpart
 
                 # Get an indicator matrix for the best matching unit against each prototype
                 # Shape (num_prototypes, batch_size, num_features)
                 best_matching_unit_mask = np.zeros_like(delta_mu)
                 best_matching_unit_mask[best_matching_unit_index, np.arange(batch_data.shape[0]), :] = 1
+                rival_matching_unit_mask = np.zeros_like(delta_mu)
+                rival_matching_unit_mask[rival_matching_unit_index, np.arange(batch_data.shape[0]), :] = 1
 
                 # Update the winning ratios for units that just won
                 unique_best_matching_unit_index, count_unique_best_matching_unit_index = np.unique_counts(best_matching_unit_index)
@@ -66,8 +72,11 @@ class RPCL(ClusterMixin):
 
                 # The update to each prototype according to each datum
                 # Shape (num_prototypes, num_features)
-                prototype_updates = learning_rate * (best_matching_unit_mask * delta_mu).sum(axis=1)
+                prototype_updates = best_matching_unit_learning_rate * (best_matching_unit_mask * delta_mu).sum(axis=1)
                 self.prototypes -= prototype_updates
+
+                prototype_updates = rival_matching_unit_learning_rate * (rival_matching_unit_mask * delta_mu).sum(axis=1)
+                self.prototypes += prototype_updates
         
     def predict(self, X: np.ndarray, batch_size: int = 4096) -> np.ndarray:
         predictions = []
