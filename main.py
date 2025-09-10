@@ -9,7 +9,7 @@ from dataset import AbstractDataset, \
     MNISTDataset, \
     FashionMNISTDataset
 
-from FSCL import FSCL
+from clusterings import *
 
 # --------------------------------------------------------------------------------
 
