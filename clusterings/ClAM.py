@@ -158,6 +158,7 @@ class RegularizedClAM(ClAMClustering):
                     num_prototypes: int, 
                     num_features: int, 
                     regularization_lambda: float,
+                    regularization_exponent: float = 2,
                     torch_device: str = "cuda", 
                     beta: float = 1, 
                     time_constant: float = 1, 
@@ -174,6 +175,7 @@ class RegularizedClAM(ClAMClustering):
             optimizer_kwargs    
         )
         self.regularization_lambda = regularization_lambda
+        self.regularization_exponent = regularization_exponent
 
     def __str__(self) -> str:
         return f"ClAM Clustering with Regularization (num_prototypes={self.num_prototypes})"
