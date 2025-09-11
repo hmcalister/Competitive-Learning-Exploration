@@ -234,12 +234,13 @@ class RegularizedClAM(ClAMClustering):
                     # Algorithm 1, line 12
                     probes = probes + delta
                 # Shape (batch_size,)
-                squared_distance = (batch_masks_compliment * (probes-batch_data)).square().sum(dim=1)
+                squared_distance = (batch_masks_compliment * (probes-batch_data)).abs().pow(self.regularization_exponent).sum(dim=1)
                 batch_loss += squared_distance.mean(dim=0)
 
                 # Regularization term, encouraging dissimilar vectors
                 prototype_similarities = (self.prototypes[:, None, :] - self.prototypes[None, :, :]).square().sum(dim=2)
-                batch_loss += self.regularization_lambda * (1/prototype_similarities).triu(diagonal=1).sum()
+                similarity_mask = ~torch.eye(self.num_prototypes, dtype=torch.bool, device=self.torch_device)
+                batch_loss += self.regularization_lambda * (1/prototype_similarities[similarity_mask]).sum()
 
                 with torch.no_grad():
                     epoch_total_loss += batch_loss
