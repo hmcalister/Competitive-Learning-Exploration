@@ -1,7 +1,31 @@
 import numpy as np
 from sklearn.base import ClusterMixin
 import torch
+from sklearn.metrics import silhouette_score, normalized_mutual_info_score
 from tqdm import tqdm
+
+class ClAMTrainingCallback():
+    def __init__(self, model):
+        """
+        A reference to the clustering model is given for ease of computation later.
+        """
+        self.model = model
+
+    @torch.no_grad()
+    def on_batch_end(self):
+        """
+        Called at the end of each batch, after gradients are calculated and applied.
+        """
+
+        pass
+
+    @torch.no_grad()
+    def on_epoch_end(self):
+        """
+        Called at the end of each epoch.
+        """
+         
+        pass
 
 class ClAMClustering(ClusterMixin):
     """
