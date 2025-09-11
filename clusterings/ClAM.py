@@ -48,6 +48,27 @@ class ClusteringPerformanceHistoryCallback(ClAMTrainingCallback):
             self.clustering_performance_history["silhouette_score"].append(silhouette)
             self.clustering_performance_history["normalized_mutual_information"].append(nmi)
 
+class PrototypeSeparationHistoryCallback(ClAMTrainingCallback):
+    def __init__(self, model):
+        super().__init__(model)
+        self.prototype_separation_history = {
+            "mean_squared_distance": [],
+            "std_squared_distance": [],
+            "mean_min_squared_distance": [],
+            "std_min_squared_distance": [],
+        }
+
+    def on_epoch_end(self):
+        prototypes: torch.Tensor = self.model.prototypes.cpu().detach().numpy() # type: ignore
+        squared_distance: np.ndarray = np.square((prototypes[None, :, :] - prototypes[:, None, :])).sum(axis=2)
+        squared_distance = squared_distance[~np.eye(prototypes.shape[0], dtype=bool)].reshape(prototypes.shape[0], prototypes.shape[0]-1)
+         
+        self.prototype_separation_history["mean_squared_distance"].append(np.mean(squared_distance))
+        self.prototype_separation_history["std_squared_distance"].append(np.std(squared_distance))
+        self.prototype_separation_history["mean_min_squared_distance"].append(np.mean(squared_distance.min(axis=1)))
+        self.prototype_separation_history["std_min_squared_distance"].append(np.std(squared_distance.min(axis=1)))
+        
+
 # --------------------------------------------------------------------------------
 
 class ClAMClustering(ClusterMixin):
