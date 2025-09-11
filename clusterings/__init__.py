@@ -1,7 +1,8 @@
 from .WinnerTakesAll import WinnerTakesAll
 from .FSCL import FSCL
 from .RPCL import RPCL
-from .ClAM import ClAMClustering, RegularizedClAM, ClAMTrainingCallback, ClusteringPerformanceHistoryCallback
+from .ClAM import ClAMClustering, RegularizedClAM, \
+    ClAMTrainingCallback, ClusteringPerformanceHistoryCallback, PrototypeSeparationHistoryCallback
 
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "ClAMClustering", 
     "RegularizedClAM", 
     "ClAMTrainingCallback", 
-    "ClusteringPerformanceHistoryCallback"
+    "ClusteringPerformanceHistoryCallback",
+    "PrototypeSeparationHistoryCallback"
 ]
