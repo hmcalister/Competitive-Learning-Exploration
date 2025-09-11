@@ -50,6 +50,7 @@ class ClAMClustering(ClusterMixin):
         self.beta = beta
         self.time_constant = time_constant
         self.num_iterations = num_iterations
+        self.training_callbacks = []
 
         self.prototypes = torch.normal(torch.zeros(num_prototypes, num_features), 0.01).to(self.torch_device).requires_grad_(True)
         self.optimizer = torch.optim.Adam([self.prototypes], **optimizer_kwargs) # type: ignore
@@ -57,8 +58,11 @@ class ClAMClustering(ClusterMixin):
     def __str__(self) -> str:
         return f"ClAM Clustering (num_prototypes={self.num_prototypes})"
 
+    def add_training_callback(self, training_callback: ClAMTrainingCallback):
+        self.training_callbacks.append(training_callback)
+
     def fit(self, 
-            X: torch.Tensor, 
+            X: torch.Tensor,
             num_epochs: int = 1000, 
             batch_size: int = 512, 
             mask_bernoulli_parameter: float = 0.8,
@@ -119,8 +123,13 @@ class ClAMClustering(ClusterMixin):
                 batch_loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-            loss_history.append(epoch_total_loss.item())
-            epoch_progress_bar.set_postfix_str(f"Loss {epoch_total_loss.item():.4e}")
+
+                for callback in self.training_callbacks:
+                    callback.on_batch_end()
+            for callback in self.training_callbacks:
+                    callback.on_epoch_end()
+            loss_history.append(epoch_total_loss.cpu().detach().item())
+            epoch_progress_bar.set_postfix({"Loss": f"{epoch_total_loss.item():.4e}"})
         return loss_history
 
     @torch.no_grad()
@@ -164,8 +173,8 @@ class ClAMClustering(ClusterMixin):
         predictions = torch.cat(predictions)
         return predictions
 
-    def fit_predict(self, X: np.ndarray, y = None) -> np.ndarray:
-        torch_X = torch.tensor(X) 
+    def fit_predict(self, X: np.ndarray, y = None) -> np.ndarray: # type: ignore
+        torch_X = torch.tensor(X)
         _ = self.fit(torch_X)
         torch_predicted_labels = self.predict(torch_X)
         return torch_predicted_labels.cpu().numpy()
@@ -187,6 +196,7 @@ class RegularizedClAM(ClAMClustering):
                     beta: float = 1, 
                     time_constant: float = 1, 
                     num_iterations: int = 8,
+
                     optimizer_kwargs: dict = {}
                 ) -> None:
         
@@ -195,7 +205,7 @@ class RegularizedClAM(ClAMClustering):
             torch_device, 
             beta, 
             time_constant, 
-            num_iterations, 
+            num_iterations,
             optimizer_kwargs    
         )
         self.regularization_lambda = regularization_lambda
@@ -205,7 +215,7 @@ class RegularizedClAM(ClAMClustering):
         return f"ClAM Clustering with Regularization (num_prototypes={self.num_prototypes})"
 
     def fit(self, 
-            X: torch.Tensor, 
+            X: torch.Tensor,
             num_epochs: int = 1000, 
             batch_size: int = 512, 
             mask_bernoulli_parameter: float = 0.8,
@@ -272,6 +282,11 @@ class RegularizedClAM(ClAMClustering):
                 batch_loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-            loss_history.append(epoch_total_loss.item())
-            epoch_progress_bar.set_postfix_str(f"Loss {epoch_total_loss.item():.4e}")
+            
+                for callback in self.training_callbacks:
+                    callback.on_batch_end()
+            for callback in self.training_callbacks:
+                    callback.on_epoch_end()
+            loss_history.append(epoch_total_loss.cpu().detach().item())
+            epoch_progress_bar.set_postfix({"Loss": f"{epoch_total_loss.item():.4e}"})
         return loss_history
