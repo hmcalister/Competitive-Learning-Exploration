@@ -27,6 +27,29 @@ class ClAMTrainingCallback():
          
         pass
 
+class ClusteringPerformanceHistoryCallback(ClAMTrainingCallback):
+    def __init__(self, model, X: torch.Tensor, y: np.ndarray | None = None):
+        super().__init__(model)
+        self.clustering_performance_history = {
+            "silhouette_score": [],
+            "normalized_mutual_information": []
+        }
+        self.X = X
+        self.y = y
+
+    def on_epoch_end(self):
+        if self.y is not None:
+            predicted_y: np.ndarray = self.model.predict(self.X).cpu().numpy()
+            try:
+                silhouette = silhouette_score(self.X.cpu().numpy(), predicted_y)
+            except ValueError:
+                silhouette = np.nan
+            nmi = normalized_mutual_info_score(self.y, predicted_y)
+            self.clustering_performance_history["silhouette_score"].append(silhouette)
+            self.clustering_performance_history["normalized_mutual_information"].append(nmi)
+
+# --------------------------------------------------------------------------------
+
 class ClAMClustering(ClusterMixin):
     """
     Basic Clustering with Associative Memories
